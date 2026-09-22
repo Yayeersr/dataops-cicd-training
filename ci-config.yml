@@ -25,4 +25,10 @@ _defaults:
   Warehouse: schema
 
 # --- Override เฉพาะ item ที่ต้องการ pattern ต่างจาก default ของ type, หรือ skip_check ---
-# ว่างตั้งใจ — ผู้เข้าอบรมแต่ละคนจะมาเพิ่ม entry ของตัวเอง (nb_<ชื่อ>_lab) ระหว่าง workshop เอง
+# ผู้เข้าอบรมแต่ละคนจะมาเพิ่ม entry ของตัวเอง (nb_<ชื่อ>_lab) ระหว่าง workshop เอง
+
+lh_endpoint_lab:
+  skip_check: true
+  skip_reason: >-
+    Endpoint lakehouse สำหรับทดสอบ cross-workspace write — ไม่มี schema contract จริงให้เช็ค
+    (แค่ table ทดสอบต่อคน)

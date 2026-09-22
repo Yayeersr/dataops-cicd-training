@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Lakehouse",
+    "displayName": "lh_endpoint_lab",
+    "description": "Shared endpoint lakehouse for dataops-cicd-training dry-run — each trainee writes to their own table"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "af1cd7af-b3e0-9543-40e2-12e1846f864e"
+  }
+}
