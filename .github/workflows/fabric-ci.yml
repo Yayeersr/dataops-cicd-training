@@ -99,7 +99,7 @@ jobs:
                 missing=1
                 ;;
             esac
-          done < <(find fabric_items -name ".platform" 2>/dev/null | sort)
+          done < <(find fabric_items fabric_items_endpoint -name ".platform" 2>/dev/null | sort)
           if [ "$missing" -eq 1 ]; then
             echo "::error::Some items failed required checks — see log above"
             exit 1
@@ -172,7 +172,7 @@ jobs:
             fi
 
             rows="${rows}| \`$name\` | $fabric_type | \`$check\` | $status |"$'\n'
-          done < <(find fabric_items -name ".platform" 2>/dev/null | sort)
+          done < <(find fabric_items fabric_items_endpoint -name ".platform" 2>/dev/null | sort)
 
           {
             echo "## 🔍 Fabric Item Check Summary"
@@ -247,6 +247,36 @@ jobs:
         # TODO(setup): แทนที่ <WORKSPACE_ID_PROD> ด้วย workspace ID จริงของ ws-dataops-prod
         # (สร้าง workspace นี้ก่อน แล้วก็อบ GUID จาก URL ของ workspace บน Fabric portal)
         run: python scripts/deploy.py --workspace <WORKSPACE_ID_PROD> --environment prod
+        env:
+          FABRIC_CLIENT_ID: ${{ secrets.FABRIC_CLIENT_ID }}
+          FABRIC_CLIENT_SECRET: ${{ secrets.FABRIC_CLIENT_SECRET }}
+          FABRIC_TENANT_ID: ${{ secrets.FABRIC_TENANT_ID }}
+
+  # endpoint item (item ที่ deploy แยกออกไปคนละ workspace จาก pipeline/notebook หลัก — เช่น
+  # lh_endpoint_lab ที่ authored ใน spl-cicd-endpoint-dev เอง) — job เดียวจัดการทุก endpoint
+  # item โดยอ่าน endpoint-targets.yml ผ่าน scripts/deploy_endpoints.py เพิ่ม endpoint item ใหม่
+  # ในอนาคต = เพิ่ม entry ใน endpoint-targets.yml เท่านั้น ไม่ต้องเพิ่ม job ใหม่ในไฟล์นี้อีก
+  #
+  # จงใจไม่ใส่ needs: deploy-prod เพื่อให้รันพร้อมกัน (parallel) กับ deploy-prod จริง ไม่ใช่รอต่อคิว
+  deploy-endpoints:
+    needs: test
+    if: (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - name: Deploy endpoint items (from endpoint-targets.yml)
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            ENVIRONMENT=prod
+          else
+            ENVIRONMENT=dev
+          fi
+          python scripts/deploy_endpoints.py --environment "$ENVIRONMENT"
         env:
           FABRIC_CLIENT_ID: ${{ secrets.FABRIC_CLIENT_ID }}
           FABRIC_CLIENT_SECRET: ${{ secrets.FABRIC_CLIENT_SECRET }}
