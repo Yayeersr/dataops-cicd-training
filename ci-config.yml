@@ -1,0 +1,28 @@
+# กำหนดว่า item แต่ละตัว "ต้องเช็คแบบไหน" (check pattern) ไม่ใช่ผูกกับ Fabric item type ตรงๆ
+# check ที่รองรับตอนนี้: unit_test | data_quality | structure | schema | none
+#
+# ลำดับการหา check pattern ของแต่ละ item (จากเจาะจงสุด -> กว้างสุด):
+#   1. entry เฉพาะ item นั้น (ระบุ check ตรงๆ)              <- override เฉพาะตัว
+#   2. _defaults.<fabric_type> ของ item นั้น (ดูจาก .Notebook / .DataPipeline / ... ท้ายชื่อ folder) <- ค่า default ตาม type
+#   3. unit_test (fail-safe เข้มสุด ถ้าไม่มีทั้ง 1 และ 2)
+#
+# ข้อดี: item ที่ pattern ตรงกับ default ของ type ตัวเองอยู่แล้ว "ไม่ต้องเขียน entry เลย"
+# เขียน entry เฉพาะตอนที่ต้องการ check pattern ต่างจาก default ของ type, หรือ skip_check เท่านั้น
+#
+# Opt-out รายตัว (ใช้ได้กับทุก pattern รวม structure/schema):
+#   skip_check: true
+#   skip_reason: "<เหตุผลที่ต้องระบุ ไม่ปล่อยผ่านแบบเงียบๆ>"
+# ต่างจาก check: none ตรงที่ยังคง label ว่า item นี้ "ควรจะ" เช็คแบบไหนไว้ (เผื่อกลับมาเปิดทีหลัง)
+#
+# ข้อดี: Fabric ออก item type ใหม่กี่ตัวก็ตาม (Eventstream, KQL Database, Reflex, ...)
+# แค่เพิ่ม default ที่นี่ (หรือ entry เฉพาะตัวถ้าจำเป็น) แล้วแม็ปไปยัง check pattern ที่มีอยู่แล้ว
+# ไม่ต้องแก้ fabric-ci.yml เลย
+
+_defaults:
+  Notebook: unit_test
+  DataPipeline: structure
+  Lakehouse: schema
+  Warehouse: schema
+
+# --- Override เฉพาะ item ที่ต้องการ pattern ต่างจาก default ของ type, หรือ skip_check ---
+# ว่างตั้งใจ — ผู้เข้าอบรมแต่ละคนจะมาเพิ่ม entry ของตัวเอง (nb_<ชื่อ>_lab) ระหว่าง workshop เอง

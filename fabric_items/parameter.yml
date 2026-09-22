@@ -1,0 +1,52 @@
+# fabric-cicd parameter file — remap environment-specific GUIDs ที่ฝังอยู่ในไฟล์ item ตอน deploy
+# อ้างอิง: https://microsoft.github.io/fabric-cicd/latest/config_files/parameter/
+#
+# ปัญหาที่แก้: Notebook ที่ attach Lakehouse ผ่าน Fabric UI (หรือ hardcode abfss:// path ตรงๆ
+# ในโค้ด) จะฝัง lakehouse id + workspace id ของ environment ที่สร้างตอนนั้นไว้ในไฟล์ item
+# ถ้าไม่ remap ตอน deploy ข้าม environment มันจะยังชี้กลับไปที่ของเดิมอยู่
+# (รันผ่านไม่ error แต่เขียนข้อมูลผิดที่ หรือหาตารางใน environment ปลายทางไม่เจอ)
+#
+# replace_value ต้องเป็น dictionary เสมอ (fabric-cicd บังคับ) — ใช้ key พิเศษ "_ALL_"
+# เพื่อให้ apply กับทุก environment เหมือนกันหมด (ต้องเป็น key เดียวในนั้นเท่านั้น
+# ถ้ามี env key อื่นปนอยู่ด้วย fabric-cicd จะ validation fail)
+
+# --- nb_<ชื่อ>_lab (training lab notebooks — ทุกคนเขียนโค้ดเดียวกัน เขียนเข้า endpoint
+# lakehouse กลางตัวเดียวกัน คนละ table) ---
+#
+# TODO(setup): ต้องสร้าง workspace + Lakehouse ต่อไปนี้ก่อน แล้วค่อยมาแทนค่า GUID ที่นี่:
+#   1. workspace "ws-dataops-endpoint-dev"  + Lakehouse ชื่อ lh_endpoint_lab (dev)
+#   2. workspace "ws-dataops-endpoint-prod" + Lakehouse ชื่อ lh_endpoint_lab (prod)
+# วิธีหา GUID: เปิด workspace/lakehouse ใน Fabric portal ดูจาก URL หรือใช้ Fabric MCP
+# (onelake_list-workspaces / onelake_list-items)
+#
+# ตั้งใจไม่ใส่ item_name ให้ 2 rule นี้ — ใช้ rule กว้าง (item_type: Notebook อย่างเดียว)
+# ให้ครอบคลุมทุกคนอัตโนมัติโดยไม่ต้องเพิ่ม entry รายคน (ปลอดภัยเพราะ GUID เป็นค่า unique
+# พอจะไม่ชนกับ item อื่นโดยบังเอิญ)
+
+find_replace:
+  # workspace id ของ endpoint (เขียนตรงเป็น abfss:// path ในโค้ด ไม่ใช้ default_lakehouse attach
+  # เพราะเป็นคนละ workspace จาก Notebook เอง — $items.../$id / $workspace.$id resolve ไม่ได้
+  # ข้ามเวิร์คสเปซ ต้อง hardcode ตรงนี้แทน)
+  - find_value: "<WORKSPACE_ID_ENDPOINT_DEV>"
+    replace_value:
+      _ALL_: "<WORKSPACE_ID_ENDPOINT_PROD>"
+    item_type: "Notebook"
+
+  # lakehouse id ของ lh_endpoint_lab
+  - find_value: "<LAKEHOUSE_ID_ENDPOINT_DEV>"
+    replace_value:
+      _ALL_: "<LAKEHOUSE_ID_ENDPOINT_PROD>"
+    item_type: "Notebook"
+
+# --- ตัวอย่าง: ถ้ามี Notebook ที่ attach Lakehouse ผ่าน UI ปกติ (ปลายทางอยู่ workspace
+# เดียวกับ Notebook เอง) ให้ใช้ dynamic remap แทน ไม่ต้อง hardcode GUID ล่วงหน้า:
+#
+# find_replace:
+#   - find_value: "<GUID Lakehouse ตอนสร้างใน Dev>"
+#     replace_value:
+#       _ALL_: "$items.Lakehouse.<ชื่อ lakehouse>.$id"
+#     item_type: "Notebook"
+#   - find_value: "<GUID workspace ตอนสร้างใน Dev>"
+#     replace_value:
+#       _ALL_: "$workspace.$id"
+#     item_type: "Notebook"

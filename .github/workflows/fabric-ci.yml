@@ -1,0 +1,253 @@
+name: Fabric CI (Training)
+
+on:
+  push:
+    branches: [ 'dev', 'main', 'feature/**' ]
+  pull_request:
+    branches: [ 'dev', 'staging', 'main' ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write   # ต้องมีสิทธิ์นี้ถึงจะ comment ตาราง summary ลง PR ได้
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+
+      # ไม่ต้องรู้จัก Fabric item type ทุกตัว — อ่านแค่ "check pattern" ที่ item นั้นแม็ปไว้ใน ci-config.yml
+      # เพิ่ม item type ใหม่ = เพิ่ม entry ใน ci-config.yml เท่านั้น ไม่ต้องแก้ไฟล์นี้
+      #
+      # หา item folder แบบ recursive ผ่านไฟล์ .platform (marker ของ Fabric item จริง) แทนการ glob
+      # fabric_items/*/ ระดับเดียว — เพราะ Fabric workspace folder (เช่นโฟลเดอร์ต่อคน) ทำให้ item
+      # อยู่ลึกกว่า 1 ชั้นได้ (fabric_items/<folder>/<item>.<Type>/) glob ระดับเดียวจะมองไม่เห็น item เลย
+      - name: Run checks based on declared pattern
+        run: |
+          missing=0
+          while IFS= read -r platform_file; do
+            item="$(dirname "$platform_file")/"
+            folder=$(basename "$item")
+            name="${folder%.*}"
+            fabric_type=$(yq ".${name}.fabric_type // \"${folder##*.}\"" ci-config.yml)
+
+            # opt-out รายตัว ใช้ได้กับทุก pattern — ต้องระบุเหตุผลเสมอ ไม่ปล่อยผ่านแบบเงียบๆ
+            skip=$(yq ".${name}.skip_check // false" ci-config.yml)
+            if [ "$skip" = "true" ]; then
+              reason=$(yq ".${name}.skip_reason // \"NO REASON GIVEN\"" ci-config.yml)
+              if [ "$reason" = "NO REASON GIVEN" ]; then
+                echo "::error::[$name] skip_check=true but skip_reason is missing in ci-config.yml"
+                missing=1
+              else
+                echo "::notice::[$name] check skipped — reason: $reason"
+              fi
+              continue
+            fi
+
+            # ลำดับ: override เฉพาะ item -> default ตาม fabric_type ใน _defaults -> unit_test (fail-safe เข้มสุด)
+            check=$(yq ".${name}.check // \"\"" ci-config.yml)
+            if [ -z "$check" ]; then
+              check=$(yq "._defaults.${fabric_type} // \"unit_test\"" ci-config.yml)
+            fi
+
+            case "$check" in
+              unit_test)
+                if [ ! -f "tests/unit/test_${name}.py" ]; then
+                  echo "::error::[$name] check=unit_test but no test found (expected tests/unit/test_${name}.py)"
+                  missing=1
+                else
+                  pytest "tests/unit/test_${name}.py"
+                fi
+                ;;
+
+              data_quality)
+                if [ ! -f "great_expectations/checkpoints/dq_${name}.yml" ]; then
+                  echo "::error::[$name] check=data_quality but no checkpoint found (expected great_expectations/checkpoints/dq_${name}.yml)"
+                  missing=1
+                else
+                  great_expectations checkpoint run "dq_${name}"
+                fi
+                ;;
+
+              structure)
+                if [ ! -f "scripts/validate_pipeline_structure.py" ]; then
+                  echo "::error::[$name] check=structure but scripts/validate_pipeline_structure.py is missing"
+                  missing=1
+                else
+                  python scripts/validate_pipeline_structure.py "$item"
+                fi
+                ;;
+
+              schema)
+                if [ ! -f "scripts/validate_schema_contract.py" ]; then
+                  echo "::error::[$name] check=schema but scripts/validate_schema_contract.py is missing"
+                  missing=1
+                else
+                  python scripts/validate_schema_contract.py "$item"
+                fi
+                ;;
+
+              none)
+                echo "::notice::[$name] check=none — no automated check configured (declared intentionally in ci-config.yml)"
+                ;;
+
+              *)
+                echo "::error::[$name] unknown check pattern '$check' in ci-config.yml"
+                missing=1
+                ;;
+            esac
+          done < <(find fabric_items -name ".platform" 2>/dev/null | sort)
+          if [ "$missing" -eq 1 ]; then
+            echo "::error::Some items failed required checks — see log above"
+            exit 1
+          fi
+
+      - name: Generate check summary table
+        if: always()
+        run: |
+          pass_count=0
+          fail_count=0
+          skip_count=0
+          rows=""
+
+          while IFS= read -r platform_file; do
+            item="$(dirname "$platform_file")/"
+            folder=$(basename "$item")
+            name="${folder%.*}"
+
+            fabric_type=$(yq ".${name}.fabric_type // \"${folder##*.}\"" ci-config.yml)
+            # ลำดับเดียวกับ step "Run checks based on declared pattern" ด้านบน — ต้องตรงกันเสมอ
+            check=$(yq ".${name}.check // \"\"" ci-config.yml)
+            if [ -z "$check" ]; then
+              check=$(yq "._defaults.${fabric_type} // \"unit_test\"" ci-config.yml)
+            fi
+            skip=$(yq ".${name}.skip_check // false" ci-config.yml)
+
+            if [ "$skip" = "true" ]; then
+              reason=$(yq ".${name}.skip_reason // \"\"" ci-config.yml)
+              status="⏭️ **Skipped** — $reason"
+              skip_count=$((skip_count + 1))
+            else
+              case "$check" in
+                unit_test)
+                  if [ -f "tests/unit/test_${name}.py" ]; then
+                    status="✅ **Pass**"; pass_count=$((pass_count + 1))
+                  else
+                    status="❌ **Missing test**"; fail_count=$((fail_count + 1))
+                  fi
+                  ;;
+                data_quality)
+                  if [ -f "great_expectations/checkpoints/dq_${name}.yml" ]; then
+                    status="✅ **Pass**"; pass_count=$((pass_count + 1))
+                  else
+                    status="❌ **Missing checkpoint**"; fail_count=$((fail_count + 1))
+                  fi
+                  ;;
+                structure)
+                  if [ -f "scripts/validate_pipeline_structure.py" ]; then
+                    status="✅ **Pass**"; pass_count=$((pass_count + 1))
+                  else
+                    status="❌ **Missing script**"; fail_count=$((fail_count + 1))
+                  fi
+                  ;;
+                schema)
+                  if [ -f "scripts/validate_schema_contract.py" ]; then
+                    status="✅ **Pass**"; pass_count=$((pass_count + 1))
+                  else
+                    status="❌ **Missing script**"; fail_count=$((fail_count + 1))
+                  fi
+                  ;;
+                none)
+                  status="⏭️ **Skipped** — no check declared (intentional)"
+                  skip_count=$((skip_count + 1))
+                  ;;
+                *)
+                  status="⚠️ **Unknown pattern**"
+                  fail_count=$((fail_count + 1))
+                  ;;
+              esac
+            fi
+
+            rows="${rows}| \`$name\` | $fabric_type | \`$check\` | $status |"$'\n'
+          done < <(find fabric_items -name ".platform" 2>/dev/null | sort)
+
+          {
+            echo "## 🔍 Fabric Item Check Summary"
+            echo ""
+            if [ "$fail_count" -gt 0 ]; then
+              echo "### ❌ $fail_count check(s) need attention before merge"
+            else
+              echo "### ✅ All checks passing — $pass_count passed, $skip_count skipped"
+            fi
+            echo ""
+            echo "| Item | Fabric Type | Check Pattern | Status |"
+            echo "|---|---|---|---|"
+            printf '%s' "$rows"
+            echo ""
+            echo "<sub>Commit \`${GITHUB_SHA::7}\` · [View full run](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})</sub>"
+          } > "$RUNNER_TEMP/check_summary.md"
+
+          # $GITHUB_STEP_SUMMARY เป็นไฟล์แยกกันคนละไฟล์ในแต่ละ step (GitHub รวมให้ทีหลังตอนแสดง Job Summary)
+          # step อื่นที่มาอ่านทีหลัง (เช่น step post-comment) จะอ่านจาก $GITHUB_STEP_SUMMARY ไม่ได้เพราะเป็นไฟล์คนละอันกับตอนเขียน
+          # เก็บสำเนาไว้ที่ $RUNNER_TEMP ด้วย เพื่อให้ step ถัดไปอ่านเนื้อหาเดิมที่ตรงกันได้จริง
+          cat "$RUNNER_TEMP/check_summary.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Post check summary as PR comment
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const summaryPath = path.join(process.env.RUNNER_TEMP, 'check_summary.md');
+            const summary = fs.readFileSync(summaryPath, 'utf8');
+            const marker = '<!-- fabric-item-check-summary -->';
+            const body = `${marker}\n${summary}`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.find(c => c.body.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+  deploy-prod:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production   # ต้องไปสร้าง environment ชื่อ "production" ใน Settings → Environments
+                               # แล้วเพิ่ม Required reviewers ก่อน ไม่งั้น deploy จะรันทันทีไม่มีใครเช็คก่อน
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - name: Deploy to Fabric (production)
+        # TODO(setup): แทนที่ <WORKSPACE_ID_PROD> ด้วย workspace ID จริงของ ws-dataops-prod
+        # (สร้าง workspace นี้ก่อน แล้วก็อบ GUID จาก URL ของ workspace บน Fabric portal)
+        run: python scripts/deploy.py --workspace <WORKSPACE_ID_PROD> --environment prod
+        env:
+          FABRIC_CLIENT_ID: ${{ secrets.FABRIC_CLIENT_ID }}
+          FABRIC_CLIENT_SECRET: ${{ secrets.FABRIC_CLIENT_SECRET }}
+          FABRIC_TENANT_ID: ${{ secrets.FABRIC_TENANT_ID }}
