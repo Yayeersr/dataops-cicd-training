@@ -16,7 +16,10 @@ Repo แยกสำหรับ **DataOps / CI-CD Workshop** โดยเฉพ
 | `ci-config.yml` | กฎว่า item ไหนต้องเช็คแบบไหน (`unit_test` / `data_quality` / `structure` / `schema` / `none`) — เริ่มต้นมีแค่ `_defaults` ว่างให้ผู้เข้าอบรมมาเพิ่ม entry เอง |
 | `requirements.txt` | dependency ที่ CI ต้องติดตั้งก่อนรันเช็ค |
 | `tests/unit/test_<name>.py` | test คู่กับ Notebook แต่ละตัว (ชื่อต้องตรงชื่อ item เป๊ะ) |
-| `great_expectations/checkpoints/dq_<name>.yml` | checkpoint คู่กับ item ที่ check = `data_quality` |
+| `scripts/new_lab.py` | สร้าง `tests/unit/test_nb_<ชื่อ>_lab.py` ให้อัตโนมัติ (เช็คก่อนว่ามี item นั้นจริงใน `fabric_items/` แล้วค่อยสร้าง) — ใช้แทนการพิมพ์ชื่อไฟล์เองเพื่อกันพิมพ์ผิด รัน: `python scripts/new_lab.py <ชื่อ>` |
+| `great_expectations/checkpoints/dq_<name>.yml` | checkpoint คู่กับ item ที่ check = `data_quality` — copy จาก `dq_example.yml` (ตัวอย่าง) แล้วแก้ตามจริง |
+| `scripts/run_data_quality_checkpoint.py` | script กลางสำหรับ check = `data_quality` — อ่าน checkpoint yaml แล้วรันผ่าน GX 1.x Python API (ไม่ใช่ CLI แบบเดิม ดู comment ในไฟล์) |
+| `great_expectations/fixtures/dq_example_data.csv` | ข้อมูลตัวอย่างคู่กับ `dq_example.yml` |
 | `scripts/validate_pipeline_structure.py`, `validate_schema_contract.py` | script กลางสำหรับ check = `structure` / `schema` |
 
 ### CD (deploy จริง) — ขาดไม่ได้

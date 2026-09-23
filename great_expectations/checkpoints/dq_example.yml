@@ -1,0 +1,28 @@
+# ตัวอย่าง data_quality checkpoint — ใช้ scripts/run_data_quality_checkpoint.py รัน (ดู comment
+# ในไฟล์นั้นว่าทำไมไม่ใช้ CLI `great_expectations checkpoint run` แบบเดิม)
+#
+# วิธีใช้กับ item ของตัวเอง:
+#   1. copy ไฟล์นี้ไปตั้งชื่อใหม่เป็น dq_<ชื่อ item>.yml (ต้องตรงชื่อ item เป๊ะ เหมือน
+#      pattern ของ tests/unit/test_<name>.py)
+#   2. แก้ data_file ให้ชี้ไป fixture/CSV ของจริง (หรือ export ตัวอย่างข้อมูลจาก Lakehouse
+#      มาเป็น CSV ไว้ทดสอบ local — script นี้รองรับแค่ pandas DataFrame จากไฟล์ ไม่ได้ต่อ
+#      live Lakehouse/Warehouse ตรงๆ)
+#   3. เพิ่ม/แก้ expectations ตามกฎ data quality จริงที่ต้องการ แล้วไปประกาศ
+#      check: data_quality ให้ item นั้นใน ci-config.yml
+#
+# รายชื่อ expectation_type ที่ใช้ได้ทั้งหมด: https://greatexpectations.io/expectations/
+# (เขียนแบบ snake_case อย่าง expect_column_values_to_not_be_null หรือ PascalCase
+# ExpectColumnValuesToNotBeNull ก็ได้ — script แปลงให้เอง)
+
+data_file: great_expectations/fixtures/dq_example_data.csv
+
+expectations:
+  - expectation_type: expect_column_values_to_not_be_null
+    kwargs:
+      column: customer_id
+
+  - expectation_type: expect_column_values_to_be_between
+    kwargs:
+      column: score
+      min_value: 0
+      max_value: 100
