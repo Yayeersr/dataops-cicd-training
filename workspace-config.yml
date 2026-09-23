@@ -1,0 +1,13 @@
+# ตั้งค่า Fabric workspace ID ของ environment หลัก (dev/prod) ที่นี่ที่เดียว — ก่อนเริ่ม
+# training (หรือทุกครั้งที่สร้าง workspace ใหม่) แก้ไฟล์นี้ไฟล์เดียว ไม่ต้องไล่หาไล่แก้
+# .github/workflows/fabric-ci.yml / scripts/deploy_local.py เอง
+#
+# หา GUID: เปิด workspace ใน Fabric portal ดูจาก URL (https://app.fabric.microsoft.com/groups/<GUID>/...)
+#
+# ไม่ใช่ secret (แค่ workspace identifier) — commit เข้า repo ได้ปกติเหมือน endpoint-targets.yml
+#
+# หมายเหตุ: นี่คือ workspace ของ fabric_items/ (item หลัก) เท่านั้น — endpoint item
+# (lh_endpoint_lab ฯลฯ) มี config แยกของตัวเองอยู่แล้วที่ endpoint-targets.yml
+
+dev: "<WORKSPACE_ID_DEV>"    # ใช้เฉพาะตอนรัน deploy_local.py มือ ต่อคน (เปลี่ยนเป็น workspace ของตัวเองก่อนรัน)
+prod: "84cc9682-9946-44a6-83b4-9275ebfb9834"

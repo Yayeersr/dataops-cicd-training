@@ -244,9 +244,11 @@ jobs:
           python-version: '3.11'
       - run: pip install -r requirements.txt
       - name: Deploy to Fabric (production)
-        # TODO(setup): แทนที่ <WORKSPACE_ID_PROD> ด้วย workspace ID จริงของ ws-dataops-prod
-        # (สร้าง workspace นี้ก่อน แล้วก็อบ GUID จาก URL ของ workspace บน Fabric portal)
-        run: python scripts/deploy.py --workspace <WORKSPACE_ID_PROD> --environment prod
+        # workspace ID อ่านจาก workspace-config.yml (ไฟล์เดียวที่ต้องแก้ก่อน training —
+        # ไม่ต้องมาไล่แก้ตรงนี้ทุกครั้งที่ workspace เปลี่ยน)
+        run: |
+          workspace_id=$(yq '.prod' workspace-config.yml)
+          python scripts/deploy.py --workspace "$workspace_id" --environment prod
         env:
           FABRIC_CLIENT_ID: ${{ secrets.FABRIC_CLIENT_ID }}
           FABRIC_CLIENT_SECRET: ${{ secrets.FABRIC_CLIENT_SECRET }}
