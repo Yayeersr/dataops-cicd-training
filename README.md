@@ -27,6 +27,7 @@ Repo แยกสำหรับ **DataOps / CI-CD Workshop** โดยเฉพ
 | `scripts/deploy_local.py` | เหมือน `deploy.py` แต่ login ผ่าน browser ตรงๆ — ใช้ตอน SP ไม่มีสิทธิ์บน connection object |
 | `fabric_items/` | payload จริงที่จะถูก deploy (sync มาจาก Fabric Git Integration ของ workspace แต่ละคน) |
 | `fabric_items/parameter.yml` | remap GUID (lakehouse/workspace) ให้ตรง environment ปลายทาง — มี rule กว้างรองรับ `nb_<ชื่อ>_lab` ของทุกคนไว้แล้ว (ดู TODO ในไฟล์) |
+| `workspace-config.yml` | workspace ID ของ environment หลัก (`dev`/`prod`) — จุดเดียวที่ต้องแก้ก่อน training, `fabric-ci.yml` และ `deploy_local.py` อ่านจากที่นี่ |
 
 ### เครื่องมือเสริม — ไม่มีก็รันได้
 
@@ -62,4 +63,5 @@ Repo แยกสำหรับ **DataOps / CI-CD Workshop** โดยเฉพ
 - [ ] ตั้ง GitHub Secrets: `FABRIC_TENANT_ID`, `FABRIC_CLIENT_ID`, `FABRIC_CLIENT_SECRET`
 - [ ] สร้าง Fabric workspace: `ws-dataops-dev-<ชื่อ>` ต่อผู้เข้าอบรม 1 คน, `ws-dataops-prod` 1 อัน, `ws-dataops-endpoint-dev` + `ws-dataops-endpoint-prod` อย่างละ 1 อัน (ทุก workspace ต้องอยู่บน Fabric capacity ไม่ใช่ Pro trial)
 - [ ] สร้าง Lakehouse `lh_endpoint_lab` ใน `ws-dataops-endpoint-dev` และ `ws-dataops-endpoint-prod`
-- [ ] เอา workspace GUID / lakehouse GUID ที่ได้ไปแทนที่ placeholder ใน `fabric_items/parameter.yml`, `.github/workflows/fabric-ci.yml` (deploy-prod job), `scripts/deploy_local.py`
+- [ ] เอา workspace GUID ของ `ws-dataops-prod` ไปใส่ใน `workspace-config.yml` (key `prod`) — `fabric-ci.yml` (deploy-prod job) กับ `deploy_local.py` อ่านจากไฟล์นี้ที่เดียว ไม่ต้องไล่แก้ทีละไฟล์
+- [ ] เอา lakehouse/endpoint workspace GUID ที่ได้ไปแทนที่ placeholder ใน `fabric_items/parameter.yml` (แยกคนละเรื่องจาก workspace หลัก)
