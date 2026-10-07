@@ -37,6 +37,8 @@ Repo แยกสำหรับ **DataOps / CI-CD Workshop** โดยเฉพ
 | ไฟล์ | หน้าที่ | ใช้ตอนไหน |
 |---|---|---|
 | `scripts/debug_parameterization.py` | validate `parameter.yml` แบบ offline ไม่ต้องมี Azure credential | ก่อน push เช็ค syntax เร็วๆ |
+| `scripts/generate_parameter_all_types.py` | สแกน repo หา GUID ที่ต้อง remap เทียบกับ item จริงของ dev workspace — `--dry-run` ไม่แก้ไฟล์ (ต้อง login `--interactive`) | **ผู้เรียนรันใน Lab 1 Phase 3** แล้วอ่านผล |
+| `scripts/verify_deployed_guids.py` | ตรวจว่า GUID ของ dev ตกค้างใน target หลัง deploy ไหม (PASS/INFO/SKIPPED) | **ผู้สอนรัน demo ใน M9** (ใช้เวลาหลายนาที ผู้เรียนไม่ต้องรัน) |
 
 ---
 
