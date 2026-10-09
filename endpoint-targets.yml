@@ -8,9 +8,8 @@
 # field ต่อ entry:
 #   item_path : path ของ item folder รวม suffix .<FabricType> (เช่น .Lakehouse) —
 #               relative ต่อ repo_dir ด้านล่าง (ส่งตรงเข้า deploy.py --items-path)
-#   repo_dir  : โฟลเดอร์ repository ที่ item นี้ authored อยู่ (relative ต่อ repo root)
-#               (item นี้ authored ตรงใน spl-cicd-endpoint-dev เอง ผ่าน Git Integration
-#               แยกต่างหากจาก spl-cicd-dev หลัก)
+#   repo_dir  : โฟลเดอร์ repository ที่ item นี้ authored อยู่ (relative ต่อ repo root) —
+#               ผูกกับ dev-endpoint workspace ผ่าน Git integration
 #   targets   : dict ของ environment -> Fabric workspace ID ปลายทาง
 #               ใส่แค่ environment ที่ item นี้ต้อง deploy จริง ไม่ต้องใส่ครบทุกตัว
 
@@ -18,6 +17,7 @@ lh_endpoint_lab:
   item_path: lh_endpoint_lab.Lakehouse
   repo_dir: fabric_items_endpoint
   targets:
-    prod: 88302912-33a1-4435-bb8a-814b8cbc4808   # spl-cicd-endpoint-prd
-    # ไม่มี dev target — lh_endpoint_lab authored ตรงใน spl-cicd-endpoint-dev เอง
-    # (อยู่ที่นั่นแล้ว ไม่ต้อง deploy เข้า dev แยก)
+    prod: "<WORKSPACE_ID_ENDPOINT_PROD>"   # GUID #4 — ws-dataops-prod-endpoint-<ชื่อ> (Lab 0 ขั้น 6)
+    # ไม่มี dev target — lh_endpoint_lab authored ใน ws-dataops-dev-endpoint-<ชื่อ> ผ่าน Git
+    # integration (branch dev, folder /fabric_items_endpoint — Lab 0 ขั้น 5) อยู่ที่นั่นแล้ว
+    # ไม่ต้อง deploy เข้า dev แยก · ตัว item ใน repo จะมีหลังจาก Commit จาก Fabric เท่านั้น

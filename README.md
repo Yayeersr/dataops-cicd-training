@@ -1,8 +1,8 @@
-# dataops-cicd-training
+# dataops-cicd-training (template)
 
-Repo แยกสำหรับ **DataOps / CI-CD Workshop** โดยเฉพาะ — ไม่ใช้ `dataops-fabric-pilot` (repo ของงานจริง) เพื่อไม่ให้ commit/PR ฝึกหัดของผู้เข้าอบรมปนกับ git history ของงานจริง โครงสร้าง/กลไกเหมือนกับ `dataops-fabric-pilot` ทุกอย่าง (pattern-based CI, `ci-config.yml`, GUID mapping ผ่าน `parameter.yml`) เพียงแต่ตัด item ของจริงออกให้เหลือแค่ scaffold ว่างๆ พร้อมให้ผู้เข้าอบรมมาเพิ่ม `nb_<ชื่อ>_lab` ของตัวเองระหว่าง workshop
+Template repo สำหรับ **DataOps / CI-CD Workshop** — ผู้เข้าอบรมแต่ละคนกด **Use this template** สร้าง repo ของตัวเอง (private) แล้วตั้งค่าเองทั้งหมดใน **Lab 0** (workspace 4 อัน, secrets, config, environment, branch rules) ก่อนทำ **Lab 1** (สร้าง Notebook และพาผ่าน CI) โครงสร้าง/กลไกเหมือนกับงานจริง (pattern-based CI, `ci-config.yml`, GUID mapping ผ่าน `parameter.yml`) เพียงแต่ตัด item ของจริงออกให้เหลือแค่ scaffold ว่างๆ
 
-ดูดีไซน์เต็มได้ที่ `DataOps-CICD-Workflow.md` (repo เอกสารแยก) และสไลด์/handout ของ workshop
+ดูขั้นตอนทีละข้อได้ที่สไลด์/handout ของ workshop (หัวข้อ Lab 0 และ Lab 1)
 
 ---
 
@@ -17,6 +17,9 @@ Repo แยกสำหรับ **DataOps / CI-CD Workshop** โดยเฉพ
 | `requirements.txt` | dependency ที่ CI ต้องติดตั้งก่อนรันเช็ค |
 | `tests/unit/test_<name>.py` | test คู่กับ Notebook แต่ละตัว (ชื่อต้องตรงชื่อ item เป๊ะ) |
 | `scripts/new_lab.py` | สร้าง `tests/unit/test_nb_<ชื่อ>_lab.py` ให้อัตโนมัติ (เช็คก่อนว่ามี item นั้นจริงใน `fabric_items/` แล้วค่อยสร้าง) — ใช้แทนการพิมพ์ชื่อไฟล์เองเพื่อกันพิมพ์ผิด รัน: `python scripts/new_lab.py <ชื่อ>` |
+| `scripts/setup_lab.py` | ตัวช่วย copy-run สำหรับ Lab 0/1: `config` (กรอก `workspace-config.yml` + `endpoint-targets.yml`), `parameter` (เขียน rule ใน `parameter.yml`), `notebook` (สร้างโค้ด Notebook ที่กรอกชื่อ+GUID แล้ว, `--copy` ลง clipboard), `check` (เช็คทุก config สอดคล้องกัน รวมเทียบ GUID ในโค้ด Notebook กับ `find_value` — กัน rule ถูกข้ามเงียบๆ) — ดูตัวอย่างคำสั่งที่หัวไฟล์ |
+| `docs/lab-notebook-code.py` | โค้ดที่ผู้เรียนคัดลอกไปวางใน Notebook ของ Lab 1 (แก้ชื่อ + GUID #3, #5) — อยู่ใน `docs/` จึงไม่ถูก deploy และ CI ไม่สแกน |
+| `scripts/run_live_dq_gates.py`, `scripts/run_live_dq_gate.py`, `dq-gates.yml` | **live DQ gate** — `dq-gates.yml` ระบุ Notebook/Pipeline ที่มี check (GX) ข้างใน, `run_live_dq_gates.py` สั่งรันจริงบน Fabric ผ่าน REST API แล้วรอผล (`run_live_dq_gate.py` ตัวรันทีละ item) — job `dq-gate-dev` (บน PR → main, workspace dev) และ `dq-gate-poc` (หลัง deploy-prod, workspace prod) ถ้ายังไม่มี entry จะผ่านพร้อม notice · โค้ด Notebook ตัวอย่าง: `docs/lab-dq-gate-notebook-code.py` · เป็นกลไกแยกนอก 5 check pattern โดยตั้งใจ (ต้องมี item deploy อยู่แล้วถึงรันได้) |
 | `great_expectations/checkpoints/dq_<name>.yml` | checkpoint คู่กับ item ที่ check = `data_quality` — copy จาก `dq_example.yml` (ตัวอย่าง) แล้วแก้ตามจริง |
 | `scripts/run_data_quality_checkpoint.py` | script กลางสำหรับ check = `data_quality` — อ่าน checkpoint yaml แล้วรันผ่าน GX 1.x Python API (ไม่ใช่ CLI แบบเดิม ดู comment ในไฟล์) |
 | `great_expectations/fixtures/dq_example_data.csv` | ข้อมูลตัวอย่างคู่กับ `dq_example.yml` |
@@ -29,8 +32,10 @@ Repo แยกสำหรับ **DataOps / CI-CD Workshop** โดยเฉพ
 | `scripts/deploy.py` | publish item เข้า workspace ปลายทาง + ลบ item เก่าที่หายจาก repo (ใช้ Service Principal ผ่าน GitHub Actions) |
 | `scripts/deploy_local.py` | เหมือน `deploy.py` แต่ login ผ่าน browser ตรงๆ — ใช้ตอน SP ไม่มีสิทธิ์บน connection object |
 | `fabric_items/` | payload จริงที่จะถูก deploy (sync มาจาก Fabric Git Integration ของ workspace แต่ละคน) |
-| `fabric_items/parameter.yml` | remap GUID (lakehouse/workspace) ให้ตรง environment ปลายทาง — มี rule กว้างรองรับ `nb_<ชื่อ>_lab` ของทุกคนไว้แล้ว (ดู TODO ในไฟล์) |
-| `workspace-config.yml` | workspace ID ของ environment หลัก (`dev`/`prod`) — จุดเดียวที่ต้องแก้ก่อน training, `fabric-ci.yml` และ `deploy_local.py` อ่านจากที่นี่ |
+| `fabric_items_endpoint/` | โฟลเดอร์ที่ผูกกับ **dev-endpoint workspace** ผ่าน Git integration — Lakehouse ที่ผู้เรียน Commit จาก Fabric มาอยู่ที่นี่ แล้ว CI (`deploy_endpoints.py`) เอาไป deploy ที่ prod-endpoint (ใน template ว่างเปล่า มีแค่ `Readme.md`) |
+| `fabric_items/parameter.yml` | remap GUID (lakehouse/workspace) ให้ตรง environment ปลายทาง — มี rule กว้างครอบคลุมทุก Notebook แต่ **ต้องแทนที่ placeholder 4 ตัวด้วย GUID ของตัวเอง** (Lab 0 ขั้น 7 · ดู TODO ในไฟล์) |
+| `workspace-config.yml` | workspace ID ของ environment หลัก (`dev`/`prod`) — **แต่ละคนแก้เองใน Lab 0 ขั้น 6**, `fabric-ci.yml` และ `deploy_local.py` อ่านจากที่นี่ |
+| `endpoint-targets.yml` | endpoint item ไป workspace ไหนต่อ environment — **แก้ target `prod` เองใน Lab 0 ขั้น 6** (ตัวอ่านคือ `scripts/deploy_endpoints.py`) |
 
 ### เครื่องมือเสริม — ไม่มีก็รันได้
 
@@ -54,19 +59,26 @@ Repo แยกสำหรับ **DataOps / CI-CD Workshop** โดยเฉพ
 
 5. **Deploy-prod ต้องมี manual approval** — ตั้งไว้ที่ GitHub Environment protection (`production`) ก่อน push เข้า `main` จะไม่ deploy ทันที
 
-6. **repo นี้เป็นของฝึกหัดล้วนๆ** — item/data ที่เขียนระหว่าง workshop จะถูกล้างทิ้งเป็นระยะ อย่าเก็บงานจริงไว้ที่นี่
+6. **repo นี้เป็นของฝึกหัดล้วนๆ** — อย่าเก็บงานจริงไว้ที่นี่ · GUID ใน `workspace-config.yml`, `endpoint-targets.yml`, `fabric_items/parameter.yml` ที่เป็น placeholder (`<...>`) ต้องแทนด้วยค่าของตัวเองก่อนใช้งาน
 
 ---
 
-## Setup ที่ต้องทำก่อน workshop (checklist สำหรับ facilitator)
+## ผู้เรียนต้องทำเอง (Lab 0) — สรุปสั้น
 
-ดูรายละเอียดเต็มในข้อความสรุปที่ส่งมาพร้อม repo นี้ — สรุปสั้นๆ:
+รายละเอียดทีละขั้นอยู่ใน handout (หัวข้อ Lab 0):
 
-- [ ] สร้าง GitHub repo จาก scaffold นี้ + push ขึ้น
-- [ ] ตั้ง branch `dev` (+ branch protection ต้องการ approve อย่างน้อย 1 คน)
-- [ ] ตั้ง GitHub Environment `production` + required reviewer
-- [ ] ตั้ง GitHub Secrets: `FABRIC_TENANT_ID`, `FABRIC_CLIENT_ID`, `FABRIC_CLIENT_SECRET`
-- [ ] สร้าง Fabric workspace: `ws-dataops-dev-<ชื่อ>` ต่อผู้เข้าอบรม 1 คน, `ws-dataops-prod` 1 อัน, `ws-dataops-endpoint-dev` + `ws-dataops-endpoint-prod` อย่างละ 1 อัน (ทุก workspace ต้องอยู่บน Fabric capacity ไม่ใช่ Pro trial)
-- [ ] สร้าง Lakehouse `lh_endpoint_lab` ใน `ws-dataops-endpoint-dev` และ `ws-dataops-endpoint-prod`
-- [ ] เอา workspace GUID ของ `ws-dataops-prod` ไปใส่ใน `workspace-config.yml` (key `prod`) — `fabric-ci.yml` (deploy-prod job) กับ `deploy_local.py` อ่านจากไฟล์นี้ที่เดียว ไม่ต้องไล่แก้ทีละไฟล์
-- [ ] เอา lakehouse/endpoint workspace GUID ที่ได้ไปแทนที่ placeholder ใน `fabric_items/parameter.yml` (แยกคนละเรื่องจาก workspace หลัก)
+1. สร้าง Fabric workspace 4 อัน: `ws-dataops-dev-<ชื่อ>`, `ws-dataops-prod-<ชื่อ>`, `ws-dataops-dev-endpoint-<ชื่อ>`, `ws-dataops-prod-endpoint-<ชื่อ>` (บน Fabric capacity ไม่ใช่ Pro เปล่า)
+2. สร้าง repo ของตัวเองจาก template นี้ (private) + แตก branch `dev` + เชิญ buddy เป็น collaborator
+3. ตั้ง GitHub Secrets: `FABRIC_TENANT_ID`, `FABRIC_CLIENT_ID`, `FABRIC_CLIENT_SECRET`
+4. ให้ Service Principal เป็น Contributor บนทั้ง 4 workspace
+5. สร้าง GitHub token (classic, scope `repo`) → เชื่อม dev-endpoint กับ Git (branch `dev`, folder `/fabric_items_endpoint`) → สร้าง Lakehouse `lh_endpoint_lab` ใน Fabric UI แล้ว Commit → จด GUID (ฝั่ง prod ไม่ต้องสร้างเอง CI deploy ให้)
+6. ตั้ง GitHub Environment `production` → `git pull origin dev` (ดึง Lakehouse ที่ Fabric commit) → `python scripts/setup_lab.py config ...` (กรอก `workspace-config.yml`, `endpoint-targets.yml`) → push `dev` + `main` → approve `deploy-endpoints` → ได้ Lakehouse ใน prod-endpoint
+7. `python scripts/setup_lab.py parameter ...` (เขียน rule ใน `fabric_items/parameter.yml` ด้วย GUID ทั้ง 6 ตัว) แล้ว `setup_lab.py check`
+8. ตั้ง branch rules (`main` ล็อกเต็ม, `dev` ไม่บังคับ PR)
+
+## ผู้สอนต้องเตรียมก่อนวัน workshop
+
+- [ ] ตั้ง repo นี้เป็น **Template repository** (Settings → Template repository) และให้ branch เริ่มต้น (`main`) มีไฟล์ครบทุกอย่าง
+- [ ] Service Principal สำหรับ lab + ค่า Tenant ID / Client ID / Client Secret ไว้แจก (เพิ่ม SP เข้า security group ที่เปิดสิทธิ์เรียก Fabric API)
+- [ ] Fabric capacity ที่ผูก workspace ได้ + tenant setting ที่ให้ sync workspace กับ Git และให้ SP เรียก Fabric API
+- [ ] จับคู่ buddy สำหรับ approve PR

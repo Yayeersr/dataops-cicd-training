@@ -10,31 +10,33 @@
 # เพื่อให้ apply กับทุก environment เหมือนกันหมด (ต้องเป็น key เดียวในนั้นเท่านั้น
 # ถ้ามี env key อื่นปนอยู่ด้วย fabric-cicd จะ validation fail)
 
-# --- nb_<ชื่อ>_lab (training lab notebooks — ทุกคนเขียนโค้ดเดียวกัน เขียนเข้า endpoint
-# lakehouse กลางตัวเดียวกัน คนละ table) ---
+# --- nb_<ชื่อ>_lab (training lab notebook) ---
 #
-# workspace/Lakehouse (dev + prod) สร้างไว้แล้วจริง — GUID ด้านล่างเช็คผ่าน Fabric MCP
-# (onelake_list-workspaces / core_search-catalog) แล้วยืนยันตรงกับของจริง:
-#   dev  = spl-cicd-endpoint-dev  (workspace) / lh_endpoint_lab (lakehouse)
-#   prod = spl-cicd-endpoint-prd  (workspace) / lh_endpoint_lab (lakehouse)
+# TODO (Lab 0 ขั้น 7): แทนที่ placeholder 4 ตัวด้านล่างด้วย GUID ของ workspace/Lakehouse ของตัวเอง
+#   #3 <WORKSPACE_ID_ENDPOINT_DEV>    = ws-dataops-dev-endpoint-<ชื่อ>
+#   #4 <WORKSPACE_ID_ENDPOINT_PROD>   = ws-dataops-prod-endpoint-<ชื่อ>
+#   #5 <LAKEHOUSE_ID_ENDPOINT_DEV>    = lh_endpoint_lab ฝั่ง dev
+#   #6 <LAKEHOUSE_ID_ENDPOINT_PROD>   = lh_endpoint_lab ฝั่ง prod (ได้หลัง CI deploy-endpoints รันรอบแรก)
+#
+# ค่า #3 และ #5 ต้องตรงกับ ENDPOINT_WORKSPACE_ID / ENDPOINT_LAKEHOUSE_ID ที่แก้ในโค้ด Notebook (Lab 1)
+# เป๊ะ — ถ้าไม่ตรง rule จะหา GUID ไม่เจอแล้วข้ามเงียบๆ (fabric-cicd ไม่ error เตือน)
 #
 # ตั้งใจไม่ใส่ item_name ให้ 2 rule นี้ — ใช้ rule กว้าง (item_type: Notebook อย่างเดียว)
-# ให้ครอบคลุมทุกคนอัตโนมัติโดยไม่ต้องเพิ่ม entry รายคน (ปลอดภัยเพราะ GUID เป็นค่า unique
-# พอจะไม่ชนกับ item อื่นโดยบังเอิญ)
+# ให้ครอบคลุมทุก Notebook ใน repo โดยไม่ต้องเพิ่ม entry รายตัว
 
 find_replace:
   # workspace id ของ endpoint (เขียนตรงเป็น abfss:// path ในโค้ด ไม่ใช้ default_lakehouse attach
   # เพราะเป็นคนละ workspace จาก Notebook เอง — $items.../$id / $workspace.$id resolve ไม่ได้
   # ข้ามเวิร์คสเปซ ต้อง hardcode ตรงนี้แทน)
-  - find_value: "30e32f68-1cee-419b-be00-c0671b00f7af"
+  - find_value: "<WORKSPACE_ID_ENDPOINT_DEV>"
     replace_value:
-      _ALL_: "88302912-33a1-4435-bb8a-814b8cbc4808"
+      _ALL_: "<WORKSPACE_ID_ENDPOINT_PROD>"
     item_type: "Notebook"
 
   # lakehouse id ของ lh_endpoint_lab
-  - find_value: "846f864e-12e1-40e2-9543-b3e0af1cd7af"
+  - find_value: "<LAKEHOUSE_ID_ENDPOINT_DEV>"
     replace_value:
-      _ALL_: "9ddb1df7-6657-4de9-86b9-6e2ada96f946"
+      _ALL_: "<LAKEHOUSE_ID_ENDPOINT_PROD>"
     item_type: "Notebook"
 
 # --- ตัวอย่าง: ถ้ามี Notebook ที่ attach Lakehouse ผ่าน UI ปกติ (ปลายทางอยู่ workspace

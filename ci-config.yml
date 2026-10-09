@@ -25,7 +25,8 @@ _defaults:
   Warehouse: schema
 
 # --- Override เฉพาะ item ที่ต้องการ pattern ต่างจาก default ของ type, หรือ skip_check ---
-# ผู้เข้าอบรมแต่ละคนจะมาเพิ่ม entry ของตัวเอง (nb_<ชื่อ>_lab) ระหว่าง workshop เอง
+# Notebook ของผู้เข้าอบรม (nb_<ชื่อ>_lab) ปกติไม่ต้องเพิ่ม entry — default ของ Notebook คือ unit_test อยู่แล้ว
+# (เพิ่ม entry เฉพาะตอนอยากเปลี่ยน pattern หรือ skip_check พร้อมเหตุผล)
 
 lh_endpoint_lab:
   skip_check: true

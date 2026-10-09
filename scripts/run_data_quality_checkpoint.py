@@ -13,6 +13,8 @@
 
 รูปแบบ config (great_expectations/checkpoints/dq_<name>.yml):
     data_file: path/to/sample.csv   # relative ต่อ repo root
+    dtype:                          # optional — บังคับ dtype ต่อ column ตอนอ่าน CSV
+      phone_number: str             # (ดู comment ข้อจำกัดด้านล่าง ทำไมต้องมีตัวนี้)
     expectations:
       - expectation_type: expect_column_values_to_not_be_null
         kwargs:
@@ -20,6 +22,12 @@
 
 ข้อจำกัด: รองรับเฉพาะข้อมูลที่โหลดเป็น pandas DataFrame จากไฟล์ (CSV) ได้ — เหมาะกับ fixture
 สำหรับทดสอบกลไก CI ระหว่าง training ไม่ใช่ตัวเชื่อมต่อ live Lakehouse/Warehouse จริง
+
+⚠️ pandas เดา dtype ของแต่ละ column เองจาก CSV — column ที่ค่าเป็นตัวเลขล้วน (เช่น
+เบอร์โทรที่ขึ้นต้นด้วย 0, รหัสไปรษณีย์) จะถูกอ่านเป็น int แล้ว "0812345678" กลายเป็น
+812345678 (เลข 0 ข้างหน้าหายไปเงียบๆ) ทำให้ expect_column_values_to_match_regex ที่คาด
+ว่าเป็น string fail ทั้งที่ข้อมูลจริงถูกต้อง — ถ้า column ไหนต้องคงความเป็น string
+(โดยเฉพาะที่ขึ้นต้นด้วย 0 หรือใช้เช็ค regex) ให้ประกาศไว้ใน key `dtype:` ด้านบน
 
 รัน:
     python scripts/run_data_quality_checkpoint.py dq_<name>
@@ -71,7 +79,7 @@ def main() -> None:
     if not expectations:
         sys.exit(f"::error::{config_path} ไม่มี expectation ให้เช็คเลย (key 'expectations' ว่าง)")
 
-    df = pd.read_csv(data_path)
+    df = pd.read_csv(data_path, dtype=(config.get("dtype") or None))
 
     context = gx.get_context(mode="ephemeral")
     data_source = context.data_sources.add_pandas(f"{args.name}_source")

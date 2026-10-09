@@ -233,9 +233,37 @@ jobs:
               });
             }
 
-  deploy-prod:
+  # Live DQ gate ก่อน deploy — สั่งรัน gate ใน dq-gates.yml (stage dev) บน workspace dev จริง
+  # รันเฉพาะ pull_request → main จึงเป็น 'skipped' บน push (ปกติ ไม่ใช่ error) ถ้าไม่มี gate ใน
+  # dq-gates.yml จะผ่านพร้อม notice · ตั้ง required status check "dq-gate-dev" บน main ถึงจะบล็อก merge ได้
+  # ลำดับ: test → dq-gate-dev → deploy-prod → dq-gate-poc
+  dq-gate-dev:
     needs: test
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - name: Run live DQ gates (stage dev, from dq-gates.yml)
+        run: python scripts/run_live_dq_gates.py --stage dev
+        env:
+          FABRIC_CLIENT_ID: ${{ secrets.FABRIC_CLIENT_ID }}
+          FABRIC_CLIENT_SECRET: ${{ secrets.FABRIC_CLIENT_SECRET }}
+          FABRIC_TENANT_ID: ${{ secrets.FABRIC_TENANT_ID }}
+
+  deploy-prod:
+    needs: [test, dq-gate-dev]
+    # always() + เช็ค result เอง เพราะ dq-gate-dev เป็น 'skipped' บน push เสมอ และ GitHub จะ skip job
+    # ถัดไปตามโดย default — gate ล้มเหลวบน PR = merge ไม่ได้ (required check) ส่วนบน push gate ที่เป็นของจริงคือ test
+    if: |
+      always() &&
+      needs.test.result == 'success' &&
+      (needs.dq-gate-dev.result == 'success' || needs.dq-gate-dev.result == 'skipped') &&
+      github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: production   # ต้องไปสร้าง environment ชื่อ "production" ใน Settings → Environments
                                # แล้วเพิ่ม Required reviewers ก่อน ไม่งั้น deploy จะรันทันทีไม่มีใครเช็คก่อน
@@ -257,14 +285,18 @@ jobs:
           FABRIC_TENANT_ID: ${{ secrets.FABRIC_TENANT_ID }}
 
   # endpoint item (item ที่ deploy แยกออกไปคนละ workspace จาก pipeline/notebook หลัก — เช่น
-  # lh_endpoint_lab ที่ authored ใน spl-cicd-endpoint-dev เอง) — job เดียวจัดการทุก endpoint
+  # lh_endpoint_lab ที่ authored ใน dev-endpoint workspace เอง) — job เดียวจัดการทุก endpoint
   # item โดยอ่าน endpoint-targets.yml ผ่าน scripts/deploy_endpoints.py เพิ่ม endpoint item ใหม่
   # ในอนาคต = เพิ่ม entry ใน endpoint-targets.yml เท่านั้น ไม่ต้องเพิ่ม job ใหม่ในไฟล์นี้อีก
   #
   # จงใจไม่ใส่ needs: deploy-prod เพื่อให้รันพร้อมกัน (parallel) กับ deploy-prod จริง ไม่ใช่รอต่อคิว
   deploy-endpoints:
-    needs: test
-    if: (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') && github.event_name == 'push'
+    needs: [test, dq-gate-dev]
+    if: |
+      always() &&
+      needs.test.result == 'success' &&
+      (needs.dq-gate-dev.result == 'success' || needs.dq-gate-dev.result == 'skipped') &&
+      (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') && github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: ${{ github.ref == 'refs/heads/main' && 'production' || '' }}
     steps:
@@ -281,6 +313,27 @@ jobs:
             ENVIRONMENT=dev
           fi
           python scripts/deploy_endpoints.py --environment "$ENVIRONMENT"
+        env:
+          FABRIC_CLIENT_ID: ${{ secrets.FABRIC_CLIENT_ID }}
+          FABRIC_CLIENT_SECRET: ${{ secrets.FABRIC_CLIENT_SECRET }}
+          FABRIC_TENANT_ID: ${{ secrets.FABRIC_TENANT_ID }}
+
+  # Live DQ gate หลัง deploy (smoke test) — สั่งรัน gate stage prod บน workspace prod เพื่อยืนยันของที่เพิ่ง deploy
+  # ไม่ใช่ gate ก่อน deploy (ล้มแล้วของขึ้น prod ไปแล้ว) — ⚠️ ผ่านที่ dev ไม่การันตีว่า prod สะอาด จึงต้องมีทั้งสองตัว
+  # รันเฉพาะหลัง deploy-prod สำเร็จบน push เข้า main
+  dq-gate-poc:
+    needs: deploy-prod
+    if: always() && needs.deploy-prod.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - name: Run live DQ gates (stage prod, from dq-gates.yml)
+        run: python scripts/run_live_dq_gates.py --stage prod
         env:
           FABRIC_CLIENT_ID: ${{ secrets.FABRIC_CLIENT_ID }}
           FABRIC_CLIENT_SECRET: ${{ secrets.FABRIC_CLIENT_SECRET }}
