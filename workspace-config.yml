@@ -1,5 +1,5 @@
 # ตั้งค่า Fabric workspace ID ของ environment หลัก (dev/prod) ที่นี่ที่เดียว — แต่ละคนแก้ไฟล์นี้
-# เองใน Lab 0 ขั้น 6 ด้วย GUID ของ workspace ตัวเอง ไม่ต้องไล่แก้
+# เองใน Lab 1 ส่วน A (A.4) ด้วย GUID ของ workspace ตัวเอง ไม่ต้องไล่แก้
 # .github/workflows/fabric-ci.yml / scripts/deploy_local.py เอง
 #
 # หา GUID: เปิด workspace ใน Fabric portal ดูจาก URL (https://app.fabric.microsoft.com/groups/<GUID>/...)

@@ -4,8 +4,8 @@
 #
 # ต้องแก้ 3 จุดก่อนกด Run:
 #   1) name                  = ชื่อย่อของตัวเอง (a-z ตัวเล็ก/ตัวเลข)
-#   2) ENDPOINT_WORKSPACE_ID = GUID #3 (workspace dev-endpoint ของคุณ จดไว้ใน Lab 0)
-#   3) ENDPOINT_LAKEHOUSE_ID = GUID #5 (Lakehouse lh_endpoint_lab ฝั่ง dev จดไว้ใน Lab 0)
+#   2) ENDPOINT_WORKSPACE_ID = GUID #3 (workspace dev-endpoint ของคุณ จดไว้ใน Lab 1 ส่วน A)
+#   3) ENDPOINT_LAKEHOUSE_ID = GUID #5 (Lakehouse lh_endpoint_lab ฝั่ง dev จดไว้ใน Lab 1 ส่วน A)
 #
 # ก่อนกด Run ต้องแนบ Lakehouse ให้ Notebook: Add Lakehouse → Existing lakehouse →
 # lh_endpoint_lab ใน ws-dataops-dev-endpoint-<ชื่อ> (Fabric ต้องมี default lakehouse ถึงจะมี spark)
@@ -25,7 +25,7 @@ def build_table_name(learner_name):
 
 table_name = build_table_name(name)
 
-# GUID ของ workspace/lakehouse ฝั่ง "dev-endpoint" ของคุณเอง (ที่จดไว้ใน Lab 0)
+# GUID ของ workspace/lakehouse ฝั่ง "dev-endpoint" ของคุณเอง (ที่จดไว้ใน Lab 1 ส่วน A)
 ENDPOINT_WORKSPACE_ID = "<GUID #3 workspace dev-endpoint>"
 ENDPOINT_LAKEHOUSE_ID = "<GUID #5 Lakehouse lh_endpoint_lab (dev)>"
 

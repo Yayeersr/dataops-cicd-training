@@ -1,5 +1,5 @@
 """
-จำลอง live DQ gate บนเครื่องตัวเอง — ใช้ในช่วงสอนแนวคิด Gate โดยไม่ต้องรอ Spark บน Fabric
+จำลอง live DQ gate บนเครื่องตัวเอง — ใช้ซ้อมก่อนรัน Notebook gate จริงบน Fabric (Lab 1 ส่วน C) โดยไม่ต้องรอ Spark
 
 gate จริง = Notebook/Pipeline ที่มี check (Great Expectations) อยู่ข้างใน แล้ว CI สั่งรันบน Fabric ผ่าน REST API
 (scripts/run_live_dq_gate.py) ถ้า check ไม่ผ่าน Notebook จะ raise → job จบด้วย Failed → job ใน CI แดง

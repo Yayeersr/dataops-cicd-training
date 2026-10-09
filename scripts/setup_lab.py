@@ -1,15 +1,15 @@
 """
-ตัวช่วยตั้งค่า Lab 0 / Lab 1 แบบ copy-run — กรอก GUID ลงไฟล์ config ให้ถูกที่ ไม่ต้องไล่แก้มือ
+ตัวช่วยตั้งค่า Lab 1 แบบ copy-run — กรอก GUID ลงไฟล์ config ให้ถูกที่ ไม่ต้องไล่แก้มือ
 (ลดโอกาสพิมพ์ผิด / สลับ dev-prod ซึ่งเป็นสาเหตุหลักที่ rule ถูกข้ามเงียบๆ)
 
 ไม่แก้อะไรนอกจากไฟล์ config 3 ไฟล์ และไม่รัน git ให้ — คำสั่ง git ยังรันเองตามขั้นตอนใน handout
 
-คำสั่ง (GUID #1–#6 ตามตารางใน Lab 0 ขั้น 5):
+คำสั่ง (GUID #1–#6 ตามตารางใน Lab 1 ส่วน A ขั้น A.3):
 
-  # Lab 0 ขั้น 6 — กรอก workspace-config.yml + endpoint-targets.yml
+  # Lab 1 ส่วน A (A.4) — กรอก workspace-config.yml + endpoint-targets.yml
   python scripts/setup_lab.py config --dev <#1> --prod <#2> --prod-endpoint <#4>
 
-  # Lab 0 ขั้น 7 — เขียน rule ใน fabric_items/parameter.yml
+  # Lab 1 ส่วน B (B.5) — เขียน rule ใน fabric_items/parameter.yml
   python scripts/setup_lab.py parameter --dev-endpoint <#3> --prod-endpoint <#4> --lh-dev <#5> --lh-prod <#6>
 
   # Lab 1 ขั้น 2 — สร้างโค้ด Notebook ที่กรอกชื่อ + GUID แล้ว (ใส่ --copy เพื่อคัดลอกเข้า clipboard)
@@ -352,16 +352,16 @@ def cmd_check(args):
 
 # ----------------------------------------------------------------------------- main
 def main():
-    ap = argparse.ArgumentParser(description="ตัวช่วยตั้งค่า Lab 0 / Lab 1 (ดูตัวอย่างคำสั่งที่หัวไฟล์)")
+    ap = argparse.ArgumentParser(description="ตัวช่วยตั้งค่า Lab 1 (ดูตัวอย่างคำสั่งที่หัวไฟล์)")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
-    c = sub.add_parser("config", help="กรอก workspace-config.yml + endpoint-targets.yml (Lab 0 ขั้น 6)")
+    c = sub.add_parser("config", help="กรอก workspace-config.yml + endpoint-targets.yml (Lab 1 ส่วน A · A.4)")
     c.add_argument("--dev", required=True, help="GUID #1 workspace dev")
     c.add_argument("--prod", required=True, help="GUID #2 workspace prod")
     c.add_argument("--prod-endpoint", required=True, help="GUID #4 workspace prod-endpoint")
     c.set_defaults(fn=cmd_config)
 
-    c = sub.add_parser("parameter", help="เขียน rule ใน fabric_items/parameter.yml (Lab 0 ขั้น 7)")
+    c = sub.add_parser("parameter", help="เขียน rule ใน fabric_items/parameter.yml (Lab 1 ส่วน B · B.5)")
     c.add_argument("--dev-endpoint", required=True, help="GUID #3 workspace dev-endpoint")
     c.add_argument("--prod-endpoint", required=True, help="GUID #4 workspace prod-endpoint")
     c.add_argument("--lh-dev", required=True, help="GUID #5 Lakehouse lh_endpoint_lab ฝั่ง dev")

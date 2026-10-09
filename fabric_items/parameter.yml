@@ -12,7 +12,7 @@
 
 # --- nb_<ชื่อ>_lab (training lab notebook) ---
 #
-# TODO (Lab 0 ขั้น 7): แทนที่ placeholder 4 ตัวด้านล่างด้วย GUID ของ workspace/Lakehouse ของตัวเอง
+# TODO (Lab 1 ส่วน B ขั้น B.5): แทนที่ placeholder 4 ตัวด้านล่างด้วย GUID ของ workspace/Lakehouse ของตัวเอง
 #   #3 <WORKSPACE_ID_ENDPOINT_DEV>    = ws-dataops-dev-endpoint-<ชื่อ>
 #   #4 <WORKSPACE_ID_ENDPOINT_PROD>   = ws-dataops-prod-endpoint-<ชื่อ>
 #   #5 <LAKEHOUSE_ID_ENDPOINT_DEV>    = lh_endpoint_lab ฝั่ง dev

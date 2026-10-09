@@ -17,7 +17,7 @@ lh_endpoint_lab:
   item_path: lh_endpoint_lab.Lakehouse
   repo_dir: fabric_items_endpoint
   targets:
-    prod: "<WORKSPACE_ID_ENDPOINT_PROD>"   # GUID #4 — ws-dataops-prod-endpoint-<ชื่อ> (Lab 0 ขั้น 6)
+    prod: "<WORKSPACE_ID_ENDPOINT_PROD>"   # GUID #4 — ws-dataops-prod-endpoint-<ชื่อ> (Lab 1 ส่วน A ขั้น A.4)
     # ไม่มี dev target — lh_endpoint_lab authored ใน ws-dataops-dev-endpoint-<ชื่อ> ผ่าน Git
-    # integration (branch dev, folder /fabric_items_endpoint — Lab 0 ขั้น 5) อยู่ที่นั่นแล้ว
+    # integration (branch dev, folder /fabric_items_endpoint — Lab 0 ขั้น 5 เชื่อม Git · Lab 1 ส่วน A สร้าง Lakehouse) อยู่ที่นั่นแล้ว
     # ไม่ต้อง deploy เข้า dev แยก · ตัว item ใน repo จะมีหลังจาก Commit จาก Fabric เท่านั้น
